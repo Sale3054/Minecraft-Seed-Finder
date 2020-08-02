@@ -1,6 +1,9 @@
-#include "finders.h"
-#include "generator.h"
+#include "cubiomes/finders.h"
+#include "cubiomes/generator.h"
+#include <string.h>
 
+#define LSIZ 25
+#define RSIZ 123835
 
 struct compactinfo_t
 {
@@ -28,53 +31,64 @@ static DWORD WINAPI searchCompactBiomesThread(LPVOID data)
     int *cache = allocCache(&g.layers[L_VORONOI_ZOOM_1], w, h);
 
 
+    printf("Womp...");
+    char seedArr[RSIZ][LSIZ];
+    char fname[25] = "seeds-filtered.txt";
+    FILE *fptr = NULL;
+    int i = 0;
+
+    fptr = fopen(fname, "r");
+    printf("Opened the file...\n");
+
     //Replaced "s" a titular seed int that now needs to be the actual seed in the arrays
     //need to initialize seedArrLen as the length of the seed Array. And I need to initalize seedArr
-    for (seedPos = 0; seedPos < seedArrLen; seedPos++)
+    printf("Starting...");
+    while(fgets(seedArr[seedPos], LSIZ, fptr))
     {
-        if (checkForBiomes(&g, cache, seedArr[seedPos], ax, az, w, h, info.filter, info.minscale))
-        {
-            int x, z;
-            if (info.withHut)
-            {
-                int r = info.range / SWAMP_HUT_CONFIG.regionSize;
-                for (z = -r; z < r; z++)
-                {
-                    for (x = -r; x < r; x++)
-                    {
-                        Pos p;
-                        p = getStructurePos(SWAMP_HUT_CONFIG, seedArr[seedPos], x, z);
-                        if (isViableStructurePos(SWAMP_HUT_CONFIG, mcversion, &g, seedArr[seedPos], p.x, p.z))
-                            goto L_hut_found;
-                    }
-                }
-                continue;
-                L_hut_found:;
-            }
-            if (info.withMonument)
-            {
-                int r = info.range / MONUMENT_CONFIG.regionSize;
-                for (z = -r; z < r; z++)
-                {
-                    for (x = -r; x < r; x++)
-                    {
-                        Pos p;
-                        p = getLargeStructurePos(MONUMENT_CONFIG, seedArr[seedPos], x, z);
-                        if (isViableStructurePos(MONUMENT_CONFIG, mcversion, &g, seedArr[seedPos], p.x, p.z))
-                            goto L_monument_found;
-                    }
-                }
-                continue;
-                L_monument_found:;
-            }
+      printf("Here");
 
-            printf("%ld\n", seedArr[seedPos]);
-            fflush(stdout);
-        }
-    }
+      if (checkForBiomes(&g, cache, seedArr[seedPos], ax, az, w, h, info.filter, info.minscale))
+      {
+        printf("Here");
+          int x, z;
+          if (info.withHut)
+          {
+              int r = info.range / SWAMP_HUT_CONFIG.regionSize;
+              for (z = -r; z < r; z++)
+              {
+                  for (x = -r; x < r; x++)
+                  {
+                      Pos p;
+                      p = getStructurePos(SWAMP_HUT_CONFIG, seedArr[seedPos], x, z);
+                      if (isViableStructurePos(SWAMP_HUT_CONFIG, mcversion, &g, seedArr[seedPos], p.x, p.z))
+                          goto L_hut_found;
+                  }
+              }
+              continue;
+              L_hut_found:;
+          }
+          if (info.withMonument)
+          {
+              int r = info.range / MONUMENT_CONFIG.regionSize;
+              for (z = -r; z < r; z++)
+              {
+                  for (x = -r; x < r; x++)
+                  {
+                      Pos p;
+                      p = getLargeStructurePos(MONUMENT_CONFIG, seedArr[seedPos], x, z);
+                      if (isViableStructurePos(MONUMENT_CONFIG, mcversion, &g, seedArr[seedPos], p.x, p.z))
+                          goto L_monument_found;
+                  }
+              }
+              continue;
+              L_monument_found:;
+          }
 
-    freeGenerator(g);
-    free(cache);
+          printf("%ld\n", seedArr[seedPos]);
+      }
+      seedPos++;
+  }
+
 
 #ifdef USE_PTHREAD
     pthread_exit(NULL);
